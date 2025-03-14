@@ -163,3 +163,22 @@ class ConvAutoencoder(nn.Module):
         x = self.encode(x)
         x = self.decode(x)
         return x  
+
+################### resnet-encoder ###############################
+class ResNet18Encoder(nn.Module):
+    def __init__(self, original_model):
+        super(ResNet18Encoder, self).__init__()
+        self.features = nn.Sequential(*list(original_model.children())[:-2])  # 去掉最后的池化层和全连接层
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))  # 添加全局平均池化层
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)  # 展平为二维数组
+        return x
+    
+    def encode(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)  # 展平为二维数组
+        return x

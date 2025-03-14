@@ -3,17 +3,21 @@ import torch.nn as nn
 import torch.optim.lr_scheduler as sch
 import utils
 from dataloader import load_data_triplet
-from models import ContrastNN
+from models import ContrastNN, ResNet18Encoder
+import torchvision.models as models
+
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 
 ################ Training code ########################
-def train_model(model, train_loader, val, n_epochs, lr):
+def train_model(model, train_loader, val_loader, n_epochs, lr):
     Loss = nn.TripletMarginLoss()
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
-    min_val_loss = 1000
-    n_epochs_stop = 3
-    epochs_no_improve = 0
+    # min_val_loss = 1000
+    # n_epochs_stop = 30
+    # epochs_no_improve = 0
     val_loss = 0
     scheduler = sch.StepLR(optimizer, step_size=10, gamma=0.5)
     done = False
@@ -74,16 +78,16 @@ def train_model(model, train_loader, val, n_epochs, lr):
         
         scheduler.step()
         
-        if val_loss < min_val_loss:
-             epochs_no_improve = 0
-             min_val_loss = val_loss  
-        else:
-            epochs_no_improve += 1
-        # Check early stopping condition
-        if (epochs_no_improve == n_epochs_stop) or train_loss == 0.0 :
-            print('Early stopping!' )
-            done = True
-            break             
+        # if val_loss < min_val_loss:
+        #      epochs_no_improve = 0
+        #      min_val_loss = val_loss  
+        # else:
+        #     epochs_no_improve += 1
+        # # Check early stopping condition
+        # if (epochs_no_improve == n_epochs_stop) or train_loss == 0.0 :
+        #     print('Early stopping!' )
+        #     done = True
+        #     break             
 
 
     return model, done
@@ -95,11 +99,14 @@ val_images = []
 epochs = 10
 max_epochs = 500
 gamma = 0.5
-debug = True
+debug = False
 
 
 if __name__== "__main__":
-    model = ContrastNN()   
+    # model = ContrastNN()   
+    # 加载预训练的 ResNet-18 模型
+    resnet18 = models.resnet18(pretrained=True)
+    model = ResNet18Encoder(resnet18)
     
     if isCuda:
         model.to(torch.device('cuda'))
@@ -115,10 +122,11 @@ if __name__== "__main__":
     train_loader, train_images = load_data_triplet(utils.train_games, model, train_images, True)
     val_loader, val_images = load_data_triplet(utils.val_games, model, val_images,True) 
     model, _ = train_model(model, train_loader, val_loader, epochs*3, lr)
+    # model, _ = train_model(model, train_loader, train_loader, epochs*3, lr)
     
-    if debug:
-        print("After 1st stage accuracy for training set:" + str(utils.evaluate_clustering (utils.train_games, model)))
-        print("After 1st stage accuracy for validation set:" + str(utils.evaluate_clustering (utils.val_games, model)))
+    # if debug:
+    print("After 1st stage accuracy for training set:" + str(utils.evaluate_clustering (utils.train_games, model)))
+    print("After 1st stage accuracy for validation set:" + str(utils.evaluate_clustering (utils.val_games, model)))
     
     success = False
     epoch_counter = epochs
@@ -129,14 +137,15 @@ if __name__== "__main__":
         train_loader, train_images = load_data_triplet(utils.train_games, model, train_images, False, threshold=0.9)
         val_loader, val_images = load_data_triplet(utils.val_games, model, val_images, False, threshold=0.9) 
         model, success = train_model(model, train_loader, val_loader, epochs, lr)
+        # model, success = train_model(model, train_loader, train_loader, epochs, lr)
         epoch_counter = epoch_counter + epochs
         lr = lr * gamma
         stage += 1
-        if debug:
-            print("After stage" + str(stage) +" accuracy for training set:" + str(utils.evaluate_clustering (utils.train_games, model)))
-            print("After stage" + str(stage) +" accuracy for validation set:" + str(utils.evaluate_clustering (utils.val_games, model)))
+        # if debug:
+        print("After stage" + str(stage) +" accuracy for training set:" + str(utils.evaluate_clustering (utils.train_games, model)))
+        print("After stage" + str(stage) +" accuracy for validation set:" + str(utils.evaluate_clustering (utils.val_games, model)))
     
-    model_name = utils.trained_models_dir+'embedding.pth'
+    model_name = utils.trained_models_dir + 'embedding.pth'
     torch.save(model.state_dict(),model_name) 
         
 

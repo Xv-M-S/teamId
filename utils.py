@@ -18,15 +18,27 @@ from imgaug import augmenters as iaa
 ################# Constants ##############################
 isCuda = torch.cuda.is_available()
 
-train_games = ["video0", "video1", "video2", "video5", "game1","game2", "game3", "game5", "game6"]
-val_games = ["video8", "game7"]
-test_games = ["video3", "video10", "game8", "game9"]
+# train_games = ["video0", "video1", "video2", "video5", "game1","game2", "game3", "game5", "game6"]
+# val_games = ["video8", "game7"]
+# test_games = ["video3", "video10", "game8", "game9"]
 
-data_dir = 'data/'
+
+# train_games = ['SNGS-060']
+# test_games = ["SNGS-060"]
+# val_games = ["SNGS-060"]
+
+# train_games = ['SNGS-060', 'SNGS-061', 'SNGS-062', 'SNGS-063', 'SNGS-064', 'SNGS-065', 'SNGS-066', 'SNGS-067', 'SNGS-068', 'SNGS-069', 'SNGS-070', 'SNGS-071', 'SNGS-072', 'SNGS-073', 'SNGS-074', 'SNGS-075', 'SNGS-076', 'SNGS-077', 'SNGS-097', 'SNGS-098', 'SNGS-099', 'SNGS-100', 'SNGS-101', 'SNGS-102', 'SNGS-103', 'SNGS-104', 'SNGS-105', 'SNGS-106', 'SNGS-107', 'SNGS-108', 'SNGS-109', 'SNGS-110', 'SNGS-111', 'SNGS-112', 'SNGS-113', 'SNGS-114', 'SNGS-115', 'SNGS-151', 'SNGS-152', 'SNGS-153', 'SNGS-154', 'SNGS-155', 'SNGS-156', 'SNGS-157', 'SNGS-158', 'SNGS-159', 'SNGS-160', 'SNGS-161', 'SNGS-162', 'SNGS-163', 'SNGS-164', 'SNGS-165', 'SNGS-166', 'SNGS-167', 'SNGS-168', 'SNGS-169', 'SNGS-170']
+# val_games = ['SNGS-021', 'SNGS-022', 'SNGS-023', 'SNGS-024', 'SNGS-025', 'SNGS-026', 'SNGS-027', 'SNGS-028', 'SNGS-029', 'SNGS-030', 'SNGS-031', 'SNGS-032', 'SNGS-033', 'SNGS-034', 'SNGS-035', 'SNGS-036', 'SNGS-037', 'SNGS-038', 'SNGS-039', 'SNGS-040', 'SNGS-041', 'SNGS-042', 'SNGS-043', 'SNGS-044', 'SNGS-045', 'SNGS-046', 'SNGS-047', 'SNGS-048', 'SNGS-049', 'SNGS-050', 'SNGS-051', 'SNGS-052', 'SNGS-053', 'SNGS-054', 'SNGS-055', 'SNGS-056', 'SNGS-057', 'SNGS-058', 'SNGS-059', 'SNGS-078', 'SNGS-079', 'SNGS-080', 'SNGS-081', 'SNGS-082', 'SNGS-083', 'SNGS-084', 'SNGS-085', 'SNGS-086', 'SNGS-087', 'SNGS-088', 'SNGS-089', 'SNGS-090', 'SNGS-091', 'SNGS-092', 'SNGS-093', 'SNGS-094', 'SNGS-095', 'SNGS-096']
+
+train_games = ['SNGS-060', 'SNGS-061', 'SNGS-062']
+val_games = ["SNGS-060"]
+
+# data_dir = 'data/'
+data_dir = "/data01/migu/Player-Role-Classification/gamestate_teamlb/train/"
 images_sub_dir = '/masked_imgs/'
 gt_file_name = '/gt.txt'
 players_only_file = '/players_only.txt'
-prefix=''
+prefix='./data/'
 
 trained_models_dir = 'trained_models/'
 
@@ -141,6 +153,7 @@ def read_train_image_data(game, offset, image_size, per_game_train_size):
 
 
 def read_test_image_data(game, offset, image_size, frames_train_size, gt_frames_number):
+    # images, gt_clusters, names = read_test_image_data(game, 0, IMAGE_SIZE, 0, 0)
     gt = get_gt_file(game)
     lines = gt.readlines()
 
@@ -150,11 +163,15 @@ def read_test_image_data(game, offset, image_size, frames_train_size, gt_frames_
        
     for line in lines:
         g_tmp = line.split(',')
-        gt_k = int(g_tmp[1]) - 1
-        if gt_k == 1:
+        # 我们的标签是 0 left 1 right 2 referee
+        gt_k = int(g_tmp[1])
+        if gt_k >= 2:
             continue
-        elif gt_k == 2:
-            gt_k = 1
+        # gt_k = int(g_tmp[1]) - 1
+        # if gt_k == 1:
+        #     continue
+        # elif gt_k == 2:
+        #     gt_k = 1
         name=str(g_tmp[0]) 
         frame_id = get_frame_id_from_name(name, game)
         
@@ -237,7 +254,7 @@ def sort_by_frame(game, files, frames_train_size, offset):
         frame = offset + 1
     while len(new_files) < len(files):
         if frame_count >= frames_train_size:
-            break;
+            break
         key = get_key(game, frame)
         indx = frame_index(key, files)
         if len(indx) == 0:

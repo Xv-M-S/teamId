@@ -34,12 +34,14 @@ def read_image_data(games, do_augment=True):
         lines = pl_list.readlines()
         images = []
         for l in lines:
+            # print(utils.prefix+l.strip())
             image = utils.read_and_process(utils.prefix+l.strip())
             images.append(image) 
             if do_augment:   
-                images.append(utils.get_flipped_image(image))         
-        if len(images) > max_images:
-            images = images[:max_images]
+                images.append(utils.get_flipped_image(image))  
+        # 不限制训练的图片数量       
+        # if len(images) > max_images:
+        #     images = images[:max_images]
         all_images.append(images)
     return all_images
 
@@ -64,7 +66,7 @@ def soft_clustering_weights(data, cluster_centres):
     return Weight
 
 # return data for game and high-confidence cluster subsets
-def load_data_helper(game, model, game_imgs, use_hist, threshold = ):       
+def load_data_helper(game, model, game_imgs, use_hist, threshold = 0.2):       
     if use_hist:
         features = utils.get_hist_features(game_imgs)
     else:
@@ -79,11 +81,37 @@ def load_data_helper(game, model, game_imgs, use_hist, threshold = ):
     #get a subset with high probability for each cluster
     indx1 = np.where(probs[:,0] > threshold)
     indx2 = np.where(probs[:,1] > threshold) 
+    """
+        indx1:(array([    2,     3,     6, ..., 15995, 15996, 15997]),)
+        indx2:(array([   14,    15,    18, ..., 15977, 15978, 15979]),)
+    """
+    print("indx1:" + str(indx1))
+    print("indx2:" + str(indx2))
     size_cl1 = len(indx1[0])
     size_cl2 = len(indx2[0])
     
     print('high confidence ratio: ' + str((size_cl1 + size_cl2)/max_images))
 
+    return indx1, indx2
+
+def load_soccer_data(game):
+    pl_list = utils.get_players_only_file(game)
+    lines = pl_list.readlines()
+
+    fake_indx1 = []
+    fake_indx2 = []
+    for i, line in enumerate(lines):
+        # print(line)
+        if "leftplayer" in line:
+            fake_indx1.append(i)
+        elif "rightplayer" in line:
+            fake_indx2.append(i)
+
+    indx1 = [fake_indx1]
+    indx2 = [fake_indx2]
+    size_cl1 = len(indx1[0])
+    size_cl2 = len(indx2[0])
+    print('image nums: ' + str((size_cl1 + size_cl2)))
     return indx1, indx2
 
 
@@ -96,19 +124,20 @@ def to_grayscale(img):
     return img_new
 
 #load data in triplets: anchor, same team, different team
-def load_data_triplet (games, model, images, use_hist, threshold = CONF_THRESHOLD):
+def load_data_triplet(games, model, images, use_hist, threshold = CONF_THRESHOLD):
     if len(images)==0:
-            images = read_image_data(games, do_augment=augment)
+        images = read_image_data(games, do_augment=augment)
     X1 = []
     X2 = []
     X3 = []
     for i, game in enumerate(games):
         game_imgs = images[i]
-        indx1, indx2 = load_data_helper(game, model, game_imgs, use_hist, threshold=threshold)
+        # indx1, indx2 = load_data_helper(game, model, game_imgs, use_hist, threshold=threshold)
+        indx1, indx2 = load_soccer_data(game)
         size_cl1 = len(indx1[0])
         size_cl2 = len(indx2[0])  
         
-         # make positive pairs for each cluster
+        # make positive pairs for each cluster
         num_pos_cl1 = size_cl1 // 2
         num_pos_cl2 = size_cl2 // 2
         pos_pairs1 = np.random.choice(indx1[0], (num_pos_cl1, 2), replace=False)
@@ -131,19 +160,22 @@ def load_data_triplet (games, model, images, use_hist, threshold = CONF_THRESHOL
             X1.append(img1)
             X2.append(img2)
             X3.append(img3)
-            if debug and k < 5:
-                print('triplets:')
-                img1 = np.array(img1,dtype=np.uint8)
-                img2 = np.array(img2,dtype=np.uint8)
-                img3 = np.array(img3,dtype=np.uint8)
+            # if debug and k < 1:
+            #     print('triplets:')
+            #     img1 = np.array(img1,dtype=np.uint8)
+            #     img2 = np.array(img2,dtype=np.uint8)
+            #     img3 = np.array(img3,dtype=np.uint8)
             
-                plt.imshow(cv.cvtColor(img1, cv.COLOR_BGR2RGB))      
-                plt.show(block=False)
-                plt.imshow(cv.cvtColor(img2, cv.COLOR_BGR2RGB))      
-                plt.show(block=False)
-                plt.imshow(cv.cvtColor(img3, cv.COLOR_BGR2RGB))      
-                plt.show(block=False)
-                print('---------------------------')
+            #     plt.imshow(cv.cvtColor(img1, cv.COLOR_BGR2RGB))      
+            #     # plt.show(block=False)
+            #     plt.savefig('img1.png')
+            #     plt.imshow(cv.cvtColor(img2, cv.COLOR_BGR2RGB))      
+            #     # plt.show(block=False)
+            #     plt.savefig('img2.png')
+            #     plt.imshow(cv.cvtColor(img3, cv.COLOR_BGR2RGB))      
+            #     # plt.show(block=False)
+            #     plt.savefig('img3.png')
+            #     print('---------------------------')
     X1 = np.array(X1,dtype=np.uint8)
     X2 = np.array(X2,dtype=np.uint8)
     X3 = np.array(X3,dtype=np.uint8)
