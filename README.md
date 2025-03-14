@@ -20,6 +20,9 @@ Clone this repository.
 ```
 git clone https://github.com/mkoshkina/teamId
 cd teamId
+conda env create -f environment.yaml
+ln -s /data01/migu/Player-Role-Classification/gamestate_teamlb/ data
+pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu113
 ```
 
 Code has been written and test on Python 3.7.  Install dependencies by running:
@@ -51,21 +54,21 @@ Refer to the paper for detailed method description.
 ## Full Workflow
 * Train referee classifier on the ground truth labels:
 
-	`python referee_classifer.py`
-	
+  `python referee_classifer.py`
+  
 * For convenience, we ran the referee classifier on all segmented images to save a list of predicted players_only 
 
-	`python referee_classifier.py --save`
-	
+  `python referee_classifier.py --save`
+  
 * Using players_only images to train embedding network (and autoencoder for comparison):
 
-	`python embedding_network.py`	
-	`python autoencoder.py`
+  `python embedding_network.py`	
+  `python autoencoder.py`
 
-	
+  
 * Run experiments using embedding network, histogram, bag of colors, or autoencoder features:
 
-	`python test_with_players_only.py with method=<method_name>` ,
+  `python test_with_players_only.py with method=<method_name>` ,
 where method_name is one of `net`, `hist`, `bag`, `ae` 
 
 ## License
