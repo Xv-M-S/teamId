@@ -23,7 +23,7 @@ CONF_THRESHOLD = 0.9
 
 ######### Flags #############
 debug = False
-augment = True
+augment = False
 max_images  = PER_GAME_TRAIN_DATASET_SIZE*2 if augment else PER_GAME_TRAIN_DATASET_SIZE
 
 
