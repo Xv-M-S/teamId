@@ -37,8 +37,8 @@ def read_image_data(games, do_augment=True):
             # print(utils.prefix+l.strip())
             image = utils.read_and_process(utils.prefix+l.strip())
             images.append(image) 
-            if do_augment:   
-                images.append(utils.get_flipped_image(image))  
+            # if do_augment:   
+            #     images.append(utils.get_flipped_image(image))  
         # 不限制训练的图片数量       
         # if len(images) > max_images:
         #     images = images[:max_images]

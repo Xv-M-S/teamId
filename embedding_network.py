@@ -107,7 +107,7 @@ if __name__== "__main__":
     # 加载预训练的 ResNet-18 模型
     resnet18 = models.resnet18(pretrained=True)
     model = ResNet18Encoder(resnet18)
-    
+
     if isCuda:
         model.to(torch.device('cuda'))
             
@@ -130,6 +130,8 @@ if __name__== "__main__":
     
     success = False
     epoch_counter = epochs
+    model_name = utils.trained_models_dir + 'Resnet18_embedding.pth'
+    torch.save(model.state_dict(),model_name) 
     # Keep training until val loss no longer imrpoves
     # Regenerate data triplets every 10 epochs
     stage = 1
@@ -145,7 +147,7 @@ if __name__== "__main__":
         print("After stage" + str(stage) +" accuracy for training set:" + str(utils.evaluate_clustering (utils.train_games, model)))
         print("After stage" + str(stage) +" accuracy for validation set:" + str(utils.evaluate_clustering (utils.val_games, model)))
     
-    model_name = utils.trained_models_dir + 'embedding.pth'
+    model_name = utils.trained_models_dir + 'Resnet18_embedding.pth'
     torch.save(model.state_dict(),model_name) 
         
 
